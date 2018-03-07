@@ -1,10 +1,11 @@
 <img width="112" alt="screen shot 2016-10-25 at 2 37 27 pm" src="https://cloud.githubusercontent.com/assets/13041/19686250/971bf7f8-9ac0-11e6-975c-188defd82df1.png">
 
-[![NPM version](https://img.shields.io/npm/v/next.svg)](https://www.npmjs.com/package/next) 
+[![NPM version](https://img.shields.io/npm/v/next.svg)](https://www.npmjs.com/package/next)
 [![Build Status](https://travis-ci.org/zeit/next.js.svg?branch=master)](https://travis-ci.org/zeit/next.js)
 [![Build status](https://ci.appveyor.com/api/projects/status/gqp5hs71l3ebtx1r/branch/master?svg=true)](https://ci.appveyor.com/project/arunoda/next-js/branch/master)
 [![Coverage Status](https://coveralls.io/repos/zeit/next.js/badge.svg?branch=master)](https://coveralls.io/r/zeit/next.js?branch=master)
 [![Slack Channel](http://zeit-slackin.now.sh/badge.svg)](https://zeit.chat)
+[![Join the community on Spectrum](https://withspectrum.github.io/badge/badge.svg)](https://spectrum.chat/next-js)
 
 Next.js is a minimalistic framework for server-rendered React applications.
 
@@ -44,6 +45,7 @@ Next.js is a minimalistic framework for server-rendered React applications.
   - [CDN support with Asset Prefix](#cdn-support-with-asset-prefix)
 - [Production deployment](#production-deployment)
 - [Static HTML export](#static-html-export)
+- [Multi Zones](#multi-zones)
 - [Recipes](#recipes)
 - [FAQ](#faq)
 - [Contributing](#contributing)
@@ -164,6 +166,14 @@ export default () => <p style={{ color: 'red' }}>hi there</p>
 
 To use more sophisticated CSS-in-JS solutions, you typically have to implement style flushing for server-side rendering. We enable this by allowing you to define your own [custom `<Document>`](#user-content-custom-document) component that wraps each page.
 
+#### Importing CSS / Sass / Less files
+
+To support importing `.css` `.scss` or `.less` files you can use these modules, which configure sensible defaults for server rendered applications.
+
+- [@zeit/next-css](https://github.com/zeit/next-plugins/tree/master/packages/next-css)
+- [@zeit/next-sass](https://github.com/zeit/next-plugins/tree/master/packages/next-sass)
+- [@zeit/next-less](https://github.com/zeit/next-plugins/tree/master/packages/next-less)
+
 ### Static file serving (e.g.: images)
 
 Create a folder called `static` in your project root directory. From your code you can then reference those files with `/static/` URLs:
@@ -216,7 +226,7 @@ export default () => (
 ```
 
 In this case only the second `<meta name="viewport" />` is rendered.
- 
+
 _Note: The contents of `<head>` get cleared upon unmounting the component, so make sure each page completely defines what it needs in `<head>`, without making assumptions about what other pages added_
 
 ### Fetching data and component lifecycle
@@ -419,6 +429,15 @@ export default ({ href, name }) =>
   </Link>
 ```
 
+##### Disabling the scroll changes to top on page
+
+The default behaviour of `<Link>` is to scroll to the top of the page. When there is a hash defined it will scroll to the specific id, just like a normal `<a>` tag. To prevent scrolling to the top / hash `scroll={false}` can be added to `<Link>`:
+
+```jsx
+<Link scroll={false} href="/?counter=10"><a>Disables scrolling</a></Link>
+<Link href="/?counter=10"><a>Changes with scrolling to top</a></Link>
+```
+
 #### Imperatively
 
 <p><details>
@@ -482,7 +501,6 @@ Here's a list of supported events:
 - `onRouteChangeComplete(url)` - Fires when a route changed completely
 - `onRouteChangeError(err, url)` - Fires when there's an error when changing routes
 - `onBeforeHistoryChange(url)` - Fires just before changing the browser's history
-- `onAppUpdated(nextRoute)` - Fires when switching pages and there's a new version of the app
 
 > Here `url` is the URL shown in the browser. If you call `Router.push(url, as)` (or similar), then the value of `url` will be `as`.
 
@@ -507,17 +525,6 @@ Router.onRouteChangeError = (err, url) => {
   if (err.cancelled) {
     console.log(`Route to ${url} was cancelled!`)
   }
-}
-```
-
-If you change a route while in between a new deployment, we can't navigate the app via client side. We need to do a full browser navigation. We do it automatically for you.
-
-But you can customize that via `Route.onAppUpdated` event like this:
-
-```js
-Router.onAppUpdated = nextUrl => {
-  // persist the local state
-  location.href = nextUrl
 }
 ```
 
@@ -554,7 +561,7 @@ componentWillReceiveProps(nextProps) {
 
 > NOTES:
 >
-> Shallow routing works **only** for same page URL changes. For an example, let's assume we've another page called `about`, and you run this:
+> Shallow routing works **only** for same page URL changes. For an example, let's assume we have another page called `about`, and you run this:
 > ```js
 > Router.push('/about?counter=10', '/about?counter=10', { shallow: true })
 > ```
@@ -599,7 +606,7 @@ The above `router` object comes with an API similar to [`next/router`](#imperati
 
 ### Prefetching Pages
 
-(This is a production only feature)
+⚠️ This is a production only feature ⚠️
 
 <p><details>
   <summary><b>Examples</b></summary>
@@ -690,7 +697,7 @@ When using a custom server with a server file, for example called `server.js`, m
 This example makes `/a` resolve to `./pages/b`, and `/b` resolve to `./pages/a`:
 
 ```js
-// This file doesn't not go through babel or webpack transformation.
+// This file doesn't go through babel or webpack transformation.
 // Make sure the syntax and sources this file requires are compatible with the current node version you are running
 // See https://github.com/zeit/next.js/issues/1245 for discussions on Universal Webpack or universal Babel
 const { createServer } = require('http')
@@ -736,9 +743,9 @@ Then, change your `start` script to `NODE_ENV=production node server.js`.
 #### Disabling file-system routing
 By default, `Next` will serve each file in `/pages` under a pathname matching the filename (eg, `/pages/some-file.js` is served at `site.com/some-file`.
 
-If your project uses custom routing, this behavior may result in the same content being served from multiple paths, which can present problems with SEO and UX. 
+If your project uses custom routing, this behavior may result in the same content being served from multiple paths, which can present problems with SEO and UX.
 
-To disable this behavior & prevent routing based on files in `/pages`, simply set the following option in your `next.config.js`: 
+To disable this behavior & prevent routing based on files in `/pages`, simply set the following option in your `next.config.js`:
 
 ```js
 // next.config.js
@@ -747,6 +754,43 @@ module.exports = {
 }
 ```
 
+#### Dynamic assetPrefix
+
+Sometimes we need to set the `assetPrefix` dynamically. This is useful when changing the `assetPrefix` based on incoming requests.
+For that, we can use `app.setAssetPrefix`.
+
+Here's an example usage of it:
+
+```js
+const next = require('next')
+const micro = require('micro')
+
+const dev = process.env.NODE_ENV !== 'production'
+const app = next({ dev })
+const handle = app.getRequestHandler()
+
+app.prepare().then(() => {
+  const server = micro((req, res) => {
+    // Add assetPrefix support based on the hostname
+    if (req.headers.host === 'my-app.com') {
+      app.setAssetPrefix('http://cdn.com/myapp')
+    } else {
+      app.setAssetPrefix('')
+    }
+
+    handleNextRequests(req, res)
+  })
+
+  server.listen(port, (err) => {
+    if (err) {
+      throw err
+    }
+
+    console.log(`> Ready on http://localhost:${port}`)
+  })
+})
+
+```
 
 ### Dynamic Import
 
@@ -963,6 +1007,36 @@ module.exports = {
 }
 ```
 
+Or use a function:
+
+```js
+module.exports = (phase, {defaultConfig}){
+  // 
+  // https://github.com/zeit/
+  return {
+    /* config options here */
+  }
+}
+```
+
+`phase` is the current context in which the configuration is loaded. You can see all phases here: [constants](./lib/constants.js)
+Phases can be imported from `next/constants`:
+
+```js
+const {PHASE_DEVELOPMENT_SERVER} = require('next/constants')
+module.exports = (phase, {defaultConfig}){
+  if(phase === PHASE_DEVELOPMENT_SERVER) {
+    return {
+      /* development only config options here */
+    }
+  }
+
+  return {
+    /* config options for all phases except development here */
+  }
+}
+```
+
 #### Setting a custom build directory
 
 You can specify a name to use for a custom build directory. For example, the following config will create a `build` folder instead of a `.next` folder. If no configuration is specified then next will create a `.next` folder.
@@ -991,6 +1065,17 @@ module.exports = {
 
 This is development-only feature. If you want to cache SSR pages in production, please see [SSR-caching](https://github.com/zeit/next.js/tree/canary/examples/ssr-caching) example.
 
+#### Configuring extensions looked for when resolving pages in `pages`
+
+Aimed at modules like [`@zeit/next-typescript`](https://github.com/zeit/next-plugins/tree/master/packages/next-typescript), that add support for pages ending in `.ts`. `pageExtensions` allows you to configure the extensions looked for in the `pages` directory when resolving pages.
+
+```js
+// next.config.js
+module.exports = {
+  pageExtensions: ['jsx', 'js']
+}
+```
+
 ### Customizing webpack config
 
 <p><details>
@@ -1006,7 +1091,7 @@ In order to extend our usage of `webpack`, you can define a function that extend
 // (But you could use ES2015 features supported by your Node.js version)
 
 module.exports = {
-  webpack: (config, { buildId, dev }) => {
+  webpack: (config, { buildId, dev, isServer, defaultLoaders }) => {
     // Perform customizations to webpack config
 
     // Important: return the modified config
@@ -1021,7 +1106,30 @@ module.exports = {
 }
 ```
 
-*Warning: Adding loaders to support new file types (css, less, svg, etc.) is __not__ recommended because only the client code gets bundled via webpack and thus it won't work on the initial server rendering. Babel plugins are a good alternative because they're applied consistently between server/client rendering (e.g. [babel-plugin-inline-react-svg](https://github.com/kesne/babel-plugin-inline-react-svg)).*
+Some commonly asked for features are available as modules:
+
+- [@zeit/next-css](https://github.com/zeit/next-plugins/tree/master/packages/next-css)
+- [@zeit/next-sass](https://github.com/zeit/next-plugins/tree/master/packages/next-sass)
+- [@zeit/next-less](https://github.com/zeit/next-plugins/tree/master/packages/next-less)
+- [@zeit/next-preact](https://github.com/zeit/next-plugins/tree/master/packages/next-preact)
+- [@zeit/next-typescript](https://github.com/zeit/next-plugins/tree/master/packages/next-typescript)
+
+*Warning: The `webpack` function is executed twice, once for the server and once for the client. This allows you to distinguish between client and server configuration using the `isServer` property*
+
+Multiple configurations can be combined together with function composition. For example:
+
+```js
+const withTypescript = require('@zeit/next-typescript')
+const withSass = require('@zeit/next-sass')
+
+module.exports = withTypescript(withSass({
+  webpack(config, options) {
+    // Further custom configuration here
+    return config
+  }
+}))
+```
+
 
 ### Customizing babel config
 
@@ -1040,8 +1148,38 @@ Here's an example `.babelrc` file:
 
 ```json
 {
-  "presets": ["next/babel", "env"]
+  "presets": ["next/babel"],
+  "plugins": []
 }
+```
+
+#### Exposing configuration to the server / client side
+
+The `config` key allows for exposing runtime configuration in your app. All keys are server only by default. To expose a configuration to both the server and client side you can use the `public` key.
+
+```js
+// next.config.js
+module.exports = {
+  serverRuntimeConfig: { // Will only be available on the server side
+    mySecret: 'secret'
+  },
+  publicRuntimeConfig: { // Will be available on both server and client
+    staticFolder: '/static'
+  }
+}
+```
+
+```js
+// pages/index.js
+import getConfig from 'next/config'
+const {serverRuntimeConfig, publicRuntimeConfig} = getConfig()
+
+console.log(serverRuntimeConfig.mySecret) // Will only be available on the server side
+console.log(publicRuntimeConfig.staticFolder) // Will be available on both server and client
+
+export default () => <div>
+  <img src={`${publicRuntimeConfig.staticFolder}/logo.png`} />
+</div>
 ```
 
 ### CDN support with Asset Prefix
@@ -1167,10 +1305,53 @@ So, you could only use `pathname`, `query` and `asPath` fields of the `context` 
 
 > Basically, you won't be able to render HTML content dynamically as we pre-build HTML files. If you need that, you need run your app with `next start`.
 
+## Multi Zones
+
+<p><details>
+  <summary><b>Examples</b></summary>
+  <ul><li><a href="./examples/with-zones">With Zones</a></li></ul>
+</details></p>
+
+A zone is a single deployment of a Next.js app. Just like that, you can have multiple zones. Then you can merge them as a single app.
+
+For an example, you can have two zones like this:
+
+* https://docs.my-app.com for serving `/docs/**`
+* https://ui.my-app.com for serving all other pages
+
+With multi zones support, you can merge both these apps into a single one. Which allows your customers to browse it using a single URL. But you can develop and deploy both apps independently.
+
+> This is exactly the same concept as microservices, but for frontend apps.
+
+### How to define a zone
+
+There are no special zones related APIs. You only need to do following things:
+
+* Make sure to keep only the pages you need in your app. (For an example, https://ui.my-app.com should not contain pages for `/docs/**`)
+* Make sure your app has an [assetPrefix](https://github.com/zeit/next.js#cdn-support-with-asset-prefix). (You can also define the assetPrefix [dynamically](https://github.com/zeit/next.js#dynamic-assetprefix).)
+
+### How to merge them
+
+You can merge zones using any HTTP proxy.
+
+You can use [micro proxy](https://github.com/zeit/micro-proxy) as your local proxy server. It allows you to easily define routing rules like below:
+
+```json
+{
+  "rules": [
+    {"pathname": "/docs**", "method":["GET", "POST", "OPTIONS"], "dest": "https://docs.my-app.com"},
+    {"pathname": "/**", "dest": "https://ui.my-app.com"}
+  ]
+}
+```
+
+For the production deployment, you can use the [path alias](https://zeit.co/docs/features/path-aliases) feature if you are using [ZEIT now](https://zeit.co/now). Otherwise, you can configure your existing proxy server to route HTML pages using a set of rules as show above.
+
 ## Recipes
 
 - [Setting up 301 redirects](https://www.raygesualdo.com/posts/301-redirects-with-nextjs/)
 - [Dealing with SSR and server only modules](https://arunoda.me/blog/ssr-and-server-only-modules)
+- [Building with React-Material-UI-Next-Express-Mongoose-Mongodb](https://github.com/builderbook/builderbook)
 
 ## FAQ
 
@@ -1213,20 +1394,6 @@ If you want to create re-usable React components that you can embed in your Next
 
 Next.js bundles [styled-jsx](https://github.com/zeit/styled-jsx) supporting scoped css. However you can use any CSS-in-JS solution in your Next app by just including your favorite library [as mentioned before](#css-in-js) in the document.
 </details>
-
-<details>
-  <summary>How do I use CSS preprocessors like SASS / SCSS / LESS?</summary>
-
-Next.js bundles [styled-jsx](https://github.com/zeit/styled-jsx) supporting scoped css. However you can use any CSS preprocessor solution in your Next app by following one of these examples:
-
-- [with-external-scoped-css](./examples/with-external-scoped-css)
-- [with-scoped-stylesheets-and-postcss](./examples/with-scoped-stylesheets-and-postcss)
-- [with-global-stylesheet](./examples/with-global-stylesheet)
-- [with-styled-jsx-scss](./examples/with-styled-jsx-scss)
-- [with-styled-jsx-plugins](./examples/with-styled-jsx-plugins)
-
-</details>
-
 
 <details>
   <summary>What syntactic features are transpiled? How do I change them?</summary>
